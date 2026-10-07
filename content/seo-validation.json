@@ -1,0 +1,40 @@
+{
+  "place_pages": 54,
+  "total_pages": 66,
+  "faq_answers": 162,
+  "metadata_unique": true,
+  "local_links_valid": true,
+  "faq_markup_matches_visible_text": true,
+  "sitemap_complete": true,
+  "top_normalized_5word_overlap": [
+    [
+      0.009,
+      "Schulzendorf",
+      "Erkner"
+    ],
+    [
+      0.008,
+      "Bötzow",
+      "Falkensee"
+    ],
+    [
+      0.008,
+      "Bötzow",
+      "Erkner"
+    ],
+    [
+      0.005,
+      "Rangsdorf",
+      "Panketal"
+    ],
+    [
+      0.005,
+      "Petershagen/Eggersdorf",
+      "Panketal"
+    ]
+  ],
+  "authored_words_per_page": {
+    "min": 215,
+    "max": 249
+  }
+}

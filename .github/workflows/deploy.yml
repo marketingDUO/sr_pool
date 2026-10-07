@@ -1,0 +1,47 @@
+name: SR Pool zu Hetzner deployen
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sr-pool-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Website bauen und prüfen
+        run: |
+          python3 build_local_pages.py
+          python3 check_local_pages.py
+      - name: SFTP installieren
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+      - name: Website hochladen
+        env:
+          HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
+          HETZNER_USER: ${{ secrets.HETZNER_USER }}
+          HETZNER_PORT: ${{ secrets.HETZNER_PORT }}
+          HETZNER_TARGET_DIR: ${{ secrets.HETZNER_TARGET_DIR }}
+          SSHPASS: ${{ secrets.HETZNER_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$HETZNER_HOST" && test -n "$HETZNER_USER" && test -n "$SSHPASS"
+          SFTP_BATCH="$(mktemp)"
+          export SFTP_BATCH
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          def quote(value):
+              if '\n' in value or '\r' in value:
+                  raise ValueError('Invalid SFTP path')
+              return '"'+value.replace('\\','\\\\').replace('"','\\"')+'"'
+          commands=['cd '+quote(os.environ.get('HETZNER_TARGET_DIR') or '.')]
+          commands += ['-mkdir '+quote(str(p.relative_to('dist'))) for p in sorted(Path('dist').rglob('*')) if p.is_dir()]
+          commands += ['put '+quote(str(p))+' '+quote(str(p.relative_to('dist'))) for p in sorted(Path('dist').rglob('*')) if p.is_file()]
+          Path(os.environ['SFTP_BATCH']).write_text('\n'.join(commands+['bye'])+'\n')
+          PY
+          sshpass -e sftp -oBatchMode=no -oStrictHostKeyChecking=accept-new -oConnectTimeout=20 -P "${HETZNER_PORT:-22}" -b "$SFTP_BATCH" "$HETZNER_USER@$HETZNER_HOST"
